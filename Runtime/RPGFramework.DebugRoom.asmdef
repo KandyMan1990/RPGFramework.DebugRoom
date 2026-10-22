@@ -1,0 +1,25 @@
+{
+    "name": "RPGFramework.DebugRoom",
+    "rootNamespace": "RPGFramework.DebugRoom",
+    "references": [
+        "RPGFramework.Audio",
+        "RPGFramework.Battle.SharedTypes",
+        "RPGFramework.Core",
+        "RPGFramework.Core.SharedTypes",
+        "RPGFramework.DebugRoom.SharedTypes",
+        "RPGFramework.DI",
+        "RPGFramework.Field.SharedTypes",
+        "RPGFramework.Hashing"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ENABLE_RPG_FRAMEWORK_DEBUG"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

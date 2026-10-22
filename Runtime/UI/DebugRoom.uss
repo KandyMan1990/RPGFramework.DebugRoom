@@ -1,0 +1,45 @@
+.debug-room {
+    flex-grow: 1;
+    padding: 24px 48px;
+    background-color: rgb(20, 24, 36);
+    font-size: 30px;
+}
+
+.debug-room__pages {
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.debug-room__page {
+    margin: 0 24px;
+    opacity: 0.45;
+}
+
+.debug-room__page--current {
+    opacity: 1;
+}
+
+.debug-room__step {
+    margin-left: 64px;
+}
+
+.debug-room__path {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.debug-room__rows {
+    flex-grow: 1;
+}
+
+.debug-room__hint {
+    font-size: 22px;
+    margin-top: 8px;
+    -unity-text-align: middle-center;
+}
+
+.debug-room .rpg-ui-button-icon {
+    width: 28px;
+    height: 28px;
+}

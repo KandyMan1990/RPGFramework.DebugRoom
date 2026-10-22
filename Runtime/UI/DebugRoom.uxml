@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Packages/com.rpgframework.core/Runtime/UI%20Toolkit/UIShared.uss?fileID=7433441132597879392&amp;guid=94d472c2b9a84d747912b7c0d4c5d053&amp;type=3#UIShared"/>
+    <Style src="DebugRoom.uss"/>
+    <ui:VisualElement name="DebugRoom" class="debug-room">
+        <ui:VisualElement name="Pages" class="debug-room__pages"/>
+        <ui:Label name="PathLabel" class="rpg-ui-label debug-room__path"/>
+        <ui:ScrollView name="Rows" mode="Vertical" horizontal-scroller-visibility="Hidden" class="debug-room__rows"/>
+        <ui:Label name="HintLabel" class="rpg-ui-label debug-room__hint"/>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,200 @@
+using System;
+using System.Collections.Generic;
+using RPGFramework.Core.Audio;
+using RPGFramework.Core.UI;
+using UnityEngine.UIElements;
+
+namespace RPGFramework.DebugRoom
+{
+    /// <summary>
+    /// What the room shows, in the layout its scene's document gives it: a button for each page and one for the size of
+    /// a step along the top, reached by moving up from the first row; the open lists' path; the rows of the one on top;
+    /// and what the controls do. It needs only the moves, submit and cancel every menu has. It reports the player's
+    /// choices to the room, which decides what follows and plays its sounds; only the cursor's move sounds here, as in
+    /// the menus.
+    /// </summary>
+    internal sealed class DebugRoomUI
+    {
+        private const string CURRENT_PAGE_CLASS = "debug-room__page--current";
+
+        internal event Action<int> RowChosen;
+        internal event Action<int> PageChosen;
+        internal event Action      StepChosen;
+
+        /// <summary>A row was stepped left, -1, or right, 1.</summary>
+        internal event Action<int, int> RowStepped;
+
+        private readonly ScrollView        m_Rows;
+        private readonly Label             m_PathLabel;
+        private readonly Label             m_HintLabel;
+        private readonly RPGUIButton[]     m_PageButtons;
+        private readonly RPGUIButton       m_StepButton;
+        private readonly RPGUIButton[]     m_TopButtons;
+        private readonly SelectionScope    m_Selection;
+        private readonly List<RPGUIButton> m_Buttons;
+
+        private bool m_InputEnabled;
+        private int  m_Page;
+
+        internal DebugRoomUI(VisualElement root, IAudioIntentPlayer audioIntentPlayer, string[] pageNames)
+        {
+            VisualElement room  = root.Q("DebugRoom");
+            VisualElement pages = room.Q("Pages");
+
+            m_Rows         = room.Q<ScrollView>("Rows");
+            m_PathLabel    = room.Q<Label>("PathLabel");
+            m_HintLabel    = room.Q<Label>("HintLabel");
+            m_PageButtons  = new RPGUIButton[pageNames.Length];
+            m_StepButton   = new RPGUIButton();
+            m_TopButtons   = new RPGUIButton[pageNames.Length + 1];
+            m_Selection    = new SelectionScope(room, audioIntentPlayer, AudioContext.Menu);
+            m_Buttons      = new List<RPGUIButton>();
+            m_InputEnabled = false;
+            m_Page         = 0;
+
+            for (int i = 0; i < pageNames.Length; i++)
+            {
+                int         page   = i;
+                RPGUIButton button = new RPGUIButton();
+
+                button.text = pageNames[i];
+                button.AddToClassList("debug-room__page");
+                button.Chosen += () => PageChosen?.Invoke(page);
+
+                pages.Add(button);
+                m_PageButtons[i] = button;
+                m_TopButtons[i]  = button;
+            }
+
+            m_StepButton.AddToClassList("debug-room__step");
+            m_StepButton.Chosen += () => StepChosen?.Invoke();
+
+            pages.Add(m_StepButton);
+            m_TopButtons[pageNames.Length] = m_StepButton;
+
+            RPGUIButton.LinkRow(m_TopButtons, true);
+        }
+
+        internal void SetInputEnabled(bool enabled)
+        {
+            m_InputEnabled = enabled;
+            m_Selection.SetInputEnabled(enabled);
+        }
+
+        internal void SetPage(int page)
+        {
+            m_Page = page;
+
+            for (int i = 0; i < m_PageButtons.Length; i++)
+            {
+                m_PageButtons[i].EnableInClassList(CURRENT_PAGE_CLASS, i == page);
+            }
+        }
+
+        internal void SetStep(string step)
+        {
+            m_StepButton.text = step;
+        }
+
+        internal void SetPath(string path)
+        {
+            m_PathLabel.text = path;
+        }
+
+        internal void SetHint(string hint)
+        {
+            m_HintLabel.text = hint;
+        }
+
+        /// <summary>
+        /// Shows a row for each text, the cursor on <paramref name="focusedRow" />, or on the page's button when there
+        /// are none, without its sound.
+        /// </summary>
+        internal void SetRows(string[] texts, int focusedRow)
+        {
+            while (m_Buttons.Count < texts.Length)
+            {
+                AddButton();
+            }
+
+            while (m_Buttons.Count > texts.Length)
+            {
+                m_Buttons[m_Buttons.Count - 1].RemoveFromHierarchy();
+                m_Buttons.RemoveAt(m_Buttons.Count - 1);
+            }
+
+            for (int i = 0; i < texts.Length; i++)
+            {
+                m_Buttons[i].text = texts[i];
+            }
+
+            LinkRowsToTop();
+
+            RPGUIButton focused = texts.Length == 0 ? m_PageButtons[m_Page] : m_Buttons[focusedRow];
+
+            m_Selection.SetInputEnabled(false);
+            focused.Focus();
+            m_Selection.SetInputEnabled(m_InputEnabled);
+
+            // Rows just added have no layout to scroll to until the next one.
+            m_Rows.schedule.Execute(() => m_Rows.ScrollTo(focused));
+        }
+
+        internal void SetRowText(int row, string text)
+        {
+            m_Buttons[row].text = text;
+        }
+
+        // The rows run down from the top's buttons, the first row's up leading back to the page's own.
+        private void LinkRowsToTop()
+        {
+            RPGUIButton[] rows = m_Buttons.ToArray();
+
+            RPGUIButton.LinkColumn(rows, false);
+
+            RPGUIButton first = rows.Length > 0 ? rows[0] : null;
+
+            for (int i = 0; i < m_TopButtons.Length; i++)
+            {
+                m_TopButtons[i].Down = first;
+            }
+
+            if (first != null)
+            {
+                first.Up = m_PageButtons[m_Page];
+            }
+        }
+
+        private void AddButton()
+        {
+            int         row    = m_Buttons.Count;
+            RPGUIButton button = new RPGUIButton();
+
+            button.Chosen += () => RowChosen?.Invoke(row);
+            button.RegisterCallback<NavigationMoveEvent>(evt => OnMove(evt, row));
+            button.RegisterCallback<FocusInEvent>(_ => m_Rows.ScrollTo(button));
+
+            m_Rows.Add(button);
+            m_Buttons.Add(button);
+        }
+
+        // Up and down move the cursor, which the selection scope does before this; left and right step the row.
+        private void OnMove(NavigationMoveEvent evt, int row)
+        {
+            int direction = evt.direction switch
+                            {
+                                NavigationMoveEvent.Direction.Left  => -1,
+                                NavigationMoveEvent.Direction.Right => 1,
+                                _                                   => 0
+                            };
+
+            if (direction == 0)
+            {
+                return;
+            }
+
+            evt.StopPropagation();
+            RowStepped?.Invoke(row, direction);
+        }
+    }
+}
