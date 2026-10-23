@@ -24,9 +24,11 @@ The buttons along the top choose a page, and the last one the size of a step —
 moving up from the first row. Cancel closes the list on top, and from a page's own list goes back to the title. It
 needs only the moves, submit and cancel every menu has, and its sounds are your audio intents', as the menus' are.
 
-**The room plays a playthrough of its own**, begun as it opens from the title, as New Game begins one: every variable at
-its default, nothing written until a save is made. Set the story up on the Variables page, then jump, and the field plays
-as it would have; the playthrough's clock starts with the jump. A battle from the room comes back to its Battles page,
+**The room plays the playthrough it is opened in.** From the title, the Debug Room button begins one as New Game does:
+every variable at its default, nothing written until a save is made. **From any field, hold L1, L2, R1, R2 and Select**
+— both shoulders, both triggers and Select — and the room replaces the field, the playthrough carrying on as the field
+left it. Either way the music stops as the room opens, so it starts silent. Set the story up on the Variables page, then jump, and the field plays as it would have; the playthrough's
+clock starts with the jump. A battle from the room comes back to its Battles page,
 the music the battle paused carrying on; a lost one goes to your game-over field unless the battle mode allows it, as
 anywhere else.
 
@@ -73,9 +75,13 @@ Everything below sits inside `#if ENABLE_RPG_FRAMEWORK_DEBUG`, or in an assembly
 
 4. **Its module id and scene**: `DebugRoomConstants.MODULE_ID => typeof(IDebugRoomModule)` in your `IModuleDatabase`,
    and its scene's name for `IDebugRoomModule` in your `ISceneDatabase`.
+5. **The way back from a field**: give your field scene's `InputAdapter` actions for both shoulders, both triggers and
+   Select; the buttons they are bound to are the combination. Five keys held at once are awkward on a keyboard, and
+   some keyboards do not register them all, so bind one key to all five actions as well: holding it holds the whole
+   combination.
 
-The title's Debug Room button and the routes in and out are the Menu package's and the default module router's, compiled
-in with the define.
+The title's Debug Room button, the field's combination and the routes in and out are the Menu package's, the Field
+package's and the default module router's, compiled in with the define.
 
 ## Not in this version
 

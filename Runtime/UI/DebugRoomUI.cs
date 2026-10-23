@@ -33,8 +33,9 @@ namespace RPGFramework.DebugRoom
         private readonly SelectionScope    m_Selection;
         private readonly List<RPGUIButton> m_Buttons;
 
-        private bool m_InputEnabled;
-        private int  m_Page;
+        private bool          m_InputEnabled;
+        private int           m_Page;
+        private VisualElement m_QuietFocus;
 
         internal DebugRoomUI(VisualElement root, IAudioIntentPlayer audioIntentPlayer, string[] pageNames)
         {
@@ -51,6 +52,10 @@ namespace RPGFramework.DebugRoom
             m_Buttons      = new List<RPGUIButton>();
             m_InputEnabled = false;
             m_Page         = 0;
+            m_QuietFocus   = null;
+
+            root.RegisterCallback<FocusInEvent>(OnFocusInBeforeScope, TrickleDown.TrickleDown);
+            root.RegisterCallback<FocusInEvent>(OnFocusInAfterScope);
 
             for (int i = 0; i < pageNames.Length; i++)
             {
@@ -132,9 +137,8 @@ namespace RPGFramework.DebugRoom
 
             RPGUIButton focused = texts.Length == 0 ? m_PageButtons[m_Page] : m_Buttons[focusedRow];
 
-            m_Selection.SetInputEnabled(false);
+            m_QuietFocus = focused;
             focused.Focus();
-            m_Selection.SetInputEnabled(m_InputEnabled);
 
             // Rows just added have no layout to scroll to until the next one.
             m_Rows.schedule.Execute(() => m_Rows.ScrollTo(focused));
@@ -163,6 +167,31 @@ namespace RPGFramework.DebugRoom
             {
                 first.Up = m_PageButtons[m_Page];
             }
+        }
+
+        // The selection scope sounds every focus move while input is on, and UI Toolkit may deliver the focus after the
+        // call that asked for it has returned, so a focus the room makes itself, after a sound of its own, is kept quiet
+        // by turning the scope's input off around its delivery, above and below the scope's own handler.
+        private void OnFocusInBeforeScope(FocusInEvent evt)
+        {
+            if (evt.target != m_QuietFocus)
+            {
+                m_QuietFocus = null;
+                return;
+            }
+
+            m_Selection.SetInputEnabled(false);
+        }
+
+        private void OnFocusInAfterScope(FocusInEvent evt)
+        {
+            if (evt.target != m_QuietFocus)
+            {
+                return;
+            }
+
+            m_QuietFocus = null;
+            m_Selection.SetInputEnabled(m_InputEnabled);
         }
 
         private void AddButton()

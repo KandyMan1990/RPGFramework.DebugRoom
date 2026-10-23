@@ -10,7 +10,6 @@ using RPGFramework.Core;
 using RPGFramework.Core.Audio;
 using RPGFramework.Core.Input;
 using RPGFramework.Core.Memory;
-using RPGFramework.Core.SaveData;
 using RPGFramework.Core.SharedTypes;
 using RPGFramework.Core.Store;
 using RPGFramework.DebugRoom.SharedTypes;
@@ -25,9 +24,10 @@ namespace RPGFramework.DebugRoom
 {
     /// <summary>
     /// The debug room: pages that jump to any field and spawn point, set any variable, try the game's audio and start
-    /// any battle, reading the game's own data so they grow with it. It plays a playthrough of its own, begun as it
-    /// opens from the title, for its pages to set up before a jump. A jump or a battle is reported for the game's module
-    /// router to carry out, a battle coming back here, and backing out of the first list goes back to the title.
+    /// any battle, reading the game's own data so they grow with it. It plays the playthrough it was opened in — one the
+    /// title begins for it, or the one a field was playing — for its pages to set up before a jump. A jump or a battle
+    /// is reported for the game's module router to carry out, a battle coming back here, and backing out of the first
+    /// list goes back to the title.
     /// </summary>
     public sealed class DebugRoomModule : IDebugRoomModule, IInputContext
     {
@@ -39,7 +39,6 @@ namespace RPGFramework.DebugRoom
         private readonly IDIResolver          m_DIResolver;
         private readonly IInputRouter         m_InputRouter;
         private readonly IAudioIntentPlayer   m_AudioIntentPlayer;
-        private readonly ISaveDataService     m_SaveDataService;
         private readonly IPausedMusicStore    m_PausedMusicStore;
         private readonly IMusicPlayer         m_MusicPlayer;
         private readonly IModuleScene         m_ModuleScene;
@@ -56,7 +55,6 @@ namespace RPGFramework.DebugRoom
                                IDIResolver               diResolver,
                                IInputRouter              inputRouter,
                                IAudioIntentPlayer        audioIntentPlayer,
-                               ISaveDataService          saveDataService,
                                IPlayTimeStore            playTimeStore,
                                IPausedMusicStore         pausedMusicStore,
                                IMemoryService            memoryService,
@@ -77,7 +75,6 @@ namespace RPGFramework.DebugRoom
             m_DIResolver        = diResolver;
             m_InputRouter       = inputRouter;
             m_AudioIntentPlayer = audioIntentPlayer;
-            m_SaveDataService   = saveDataService;
             m_PausedMusicStore  = pausedMusicStore;
             m_MusicPlayer       = musicPlayer;
             m_ModuleScene       = moduleScene;
@@ -112,7 +109,7 @@ namespace RPGFramework.DebugRoom
         }
 
         // Back from a battle the room shows its battles again, and the music the battle paused carries on, as the
-        // field's does; from the title it begins its playthrough, every variable at its default.
+        // field's does.
         Task IModule.OnEnterAsync(byte entry)
         {
             m_InputAdapter = m_ModuleScene.Find<InputAdapter>();
@@ -128,10 +125,6 @@ namespace RPGFramework.DebugRoom
                 }
 
                 m_Page = BATTLES_PAGE;
-            }
-            else
-            {
-                m_SaveDataService.BeginSave(m_SaveDataService.GetUnusedSaveFileName());
             }
 
             m_InputRouter.Push(this);
