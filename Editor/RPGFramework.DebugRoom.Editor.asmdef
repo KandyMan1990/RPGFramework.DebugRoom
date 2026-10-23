@@ -1,0 +1,21 @@
+{
+    "name": "RPGFramework.DebugRoom.Editor",
+    "rootNamespace": "RPGFramework.DebugRoom.Editor",
+    "references": [
+        "RPGFramework.DebugRoom",
+        "RPGFramework.DebugRoom.Authoring"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ENABLE_RPG_FRAMEWORK_DEBUG"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RPGFramework.Core.Audio;
 using RPGFramework.Core.UI;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace RPGFramework.DebugRoom
@@ -9,17 +10,21 @@ namespace RPGFramework.DebugRoom
     /// <summary>
     /// What the room shows, in the layout its scene's document gives it: a button for each page and one for the size of
     /// a step along the top, reached by moving up from the first row; the open lists' path; the rows of the one on top;
-    /// and what the controls do. It needs only the moves, submit and cancel every menu has. It reports the player's
-    /// choices to the room, which decides what follows and plays its sounds; only the cursor's move sounds here, as in
-    /// the menus.
+    /// what the controls do; and a text field for a name, opened when one is asked for. It needs only the moves, submit
+    /// and cancel every menu has, and a keyboard to type a name. It reports the player's choices to the room, which
+    /// decides what follows and plays its sounds; only the cursor's move sounds here, as in the menus.
     /// </summary>
     internal sealed class DebugRoomUI
     {
-        private const string CURRENT_PAGE_CLASS = "debug-room__page--current";
+        private const string CURRENT_PAGE_CLASS    = "debug-room__page--current";
+        private const string OPEN_NAME_ENTRY_CLASS = "debug-room__name-entry--open";
 
         internal event Action<int> RowChosen;
         internal event Action<int> PageChosen;
         internal event Action      StepChosen;
+
+        /// <summary>Enter was pressed in the name entry, with the name typed.</summary>
+        internal event Action<string> NameEntered;
 
         /// <summary>A row was stepped left, -1, or right, 1.</summary>
         internal event Action<int, int> RowStepped;
@@ -27,6 +32,9 @@ namespace RPGFramework.DebugRoom
         private readonly ScrollView        m_Rows;
         private readonly Label             m_PathLabel;
         private readonly Label             m_HintLabel;
+        private readonly VisualElement     m_NameEntry;
+        private readonly Label             m_NamePrompt;
+        private readonly TextField         m_NameField;
         private readonly RPGUIButton[]     m_PageButtons;
         private readonly RPGUIButton       m_StepButton;
         private readonly RPGUIButton[]     m_TopButtons;
@@ -45,6 +53,9 @@ namespace RPGFramework.DebugRoom
             m_Rows         = room.Q<ScrollView>("Rows");
             m_PathLabel    = room.Q<Label>("PathLabel");
             m_HintLabel    = room.Q<Label>("HintLabel");
+            m_NameEntry    = room.Q("NameEntry");
+            m_NamePrompt   = room.Q<Label>("NamePrompt");
+            m_NameField    = room.Q<TextField>("NameField");
             m_PageButtons  = new RPGUIButton[pageNames.Length];
             m_StepButton   = new RPGUIButton();
             m_TopButtons   = new RPGUIButton[pageNames.Length + 1];
@@ -56,6 +67,12 @@ namespace RPGFramework.DebugRoom
 
             root.RegisterCallback<FocusInEvent>(OnFocusInBeforeScope, TrickleDown.TrickleDown);
             root.RegisterCallback<FocusInEvent>(OnFocusInAfterScope);
+
+            // Keys bound to navigation or submit are letters too, so as a name is typed they move nothing and choose
+            // nothing; Enter alone gives the name.
+            m_NameField.RegisterCallback<KeyDownEvent>(OnNameKeyDown, TrickleDown.TrickleDown);
+            m_NameField.RegisterCallback<NavigationMoveEvent>(StopInNameField, TrickleDown.TrickleDown);
+            m_NameField.RegisterCallback<NavigationSubmitEvent>(StopInNameField, TrickleDown.TrickleDown);
 
             for (int i = 0; i < pageNames.Length; i++)
             {
@@ -149,6 +166,38 @@ namespace RPGFramework.DebugRoom
             m_Buttons[row].text = text;
         }
 
+        /// <summary>Opens the name entry, empty, with the cursor in it and without its sound.</summary>
+        internal void AskForName(string prompt)
+        {
+            m_NamePrompt.text = prompt;
+            m_NameField.SetValueWithoutNotify(string.Empty);
+            m_NameEntry.AddToClassList(OPEN_NAME_ENTRY_CLASS);
+
+            m_QuietFocus = m_NameField;
+            m_NameField.Focus();
+        }
+
+        internal void CloseNameEntry()
+        {
+            m_NameEntry.RemoveFromClassList(OPEN_NAME_ENTRY_CLASS);
+        }
+
+        private void OnNameKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+            {
+                return;
+            }
+
+            evt.StopPropagation();
+            NameEntered?.Invoke(m_NameField.value);
+        }
+
+        private void StopInNameField(EventBase evt)
+        {
+            evt.StopPropagation();
+        }
+
         // The rows run down from the top's buttons, the first row's up leading back to the page's own.
         private void LinkRowsToTop()
         {
@@ -174,7 +223,7 @@ namespace RPGFramework.DebugRoom
         // by turning the scope's input off around its delivery, above and below the scope's own handler.
         private void OnFocusInBeforeScope(FocusInEvent evt)
         {
-            if (evt.target != m_QuietFocus)
+            if (!IsQuiet(evt))
             {
                 m_QuietFocus = null;
                 return;
@@ -185,13 +234,21 @@ namespace RPGFramework.DebugRoom
 
         private void OnFocusInAfterScope(FocusInEvent evt)
         {
-            if (evt.target != m_QuietFocus)
+            if (!IsQuiet(evt))
             {
                 return;
             }
 
             m_QuietFocus = null;
             m_Selection.SetInputEnabled(m_InputEnabled);
+        }
+
+        // A text field passes its focus to the element inside it that takes the text.
+        private bool IsQuiet(FocusInEvent evt)
+        {
+            VisualElement target = evt.target as VisualElement;
+
+            return m_QuietFocus != null && target != null && (target == m_QuietFocus || m_QuietFocus.Contains(target));
         }
 
         private void AddButton()

@@ -33,6 +33,25 @@
     flex-grow: 1;
 }
 
+.debug-room__name-entry {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.debug-room__name-entry--open {
+    display: flex;
+}
+
+.debug-room__name-prompt {
+    margin-right: 16px;
+}
+
+.debug-room__name-field {
+    flex-grow: 1;
+}
+
 .debug-room__hint {
     font-size: 22px;
     margin-top: 8px;

@@ -10,6 +10,7 @@ using RPGFramework.Core;
 using RPGFramework.Core.Audio;
 using RPGFramework.Core.Input;
 using RPGFramework.Core.Memory;
+using RPGFramework.Core.SaveData;
 using RPGFramework.Core.SharedTypes;
 using RPGFramework.Core.Store;
 using RPGFramework.DebugRoom.SharedTypes;
@@ -23,15 +24,15 @@ using UnityEngine.UIElements;
 namespace RPGFramework.DebugRoom
 {
     /// <summary>
-    /// The debug room: pages that jump to any field and spawn point, set any variable, try the game's audio and start
-    /// any battle, reading the game's own data so they grow with it. It plays the playthrough it was opened in — one the
+    /// The debug room: pages that jump to any field and spawn point, save and load named scenarios, set any variable,
+    /// try the game's audio and start any battle, reading the game's own data so they grow with it. It plays the playthrough it was opened in — one the
     /// title begins for it, or the one a field was playing — for its pages to set up before a jump. A jump or a battle
     /// is reported for the game's module router to carry out, a battle coming back here, and backing out of the first
     /// list goes back to the title.
     /// </summary>
     public sealed class DebugRoomModule : IDebugRoomModule, IInputContext
     {
-        private const int   BATTLES_PAGE         = 3;
+        private const int   BATTLES_PAGE         = 4;
         private const int   LARGEST_STEP         = 1000000;
         private const float MUSIC_RESUME_SECONDS = 1f;
 
@@ -46,15 +47,18 @@ namespace RPGFramework.DebugRoom
         private readonly List<DebugRoomLevel> m_Levels;
         private readonly DebugRoomUI          m_UI;
 
-        private InputAdapter m_InputAdapter;
-        private int          m_Page;
-        private int          m_Step;
-        private bool         m_Busy;
+        private InputAdapter     m_InputAdapter;
+        private IDebugRoomNaming m_Naming;
+        private int              m_NamingRow;
+        private int              m_Page;
+        private int              m_Step;
+        private bool             m_Busy;
 
         public DebugRoomModule(ICoreModule               coreModule,
                                IDIResolver               diResolver,
                                IInputRouter              inputRouter,
                                IAudioIntentPlayer        audioIntentPlayer,
+                               IDebugSaveDataService     saveDataService,
                                IPlayTimeStore            playTimeStore,
                                IPausedMusicStore         pausedMusicStore,
                                IMemoryService            memoryService,
@@ -79,6 +83,8 @@ namespace RPGFramework.DebugRoom
             m_MusicPlayer       = musicPlayer;
             m_ModuleScene       = moduleScene;
             m_Levels            = new List<DebugRoomLevel>();
+            m_Naming            = null;
+            m_NamingRow         = 0;
             m_Page              = 0;
             m_Step              = 1;
             m_Busy              = false;
@@ -86,6 +92,7 @@ namespace RPGFramework.DebugRoom
             m_Pages = new IDebugRoomList[]
                       {
                           new FieldsPage(fieldDatabase, spawnPointLoader, fieldArgsStore, playTimeStore),
+                          new ScenariosPage(saveDataService, playTimeStore),
                           new VariablesPage(memoryService, variableMap),
                           new AudioPage(musicProvider, sfxProvider, musicPlayer, sfxPlayer),
                           new BattlesPage(arenaDatabase, battleArgsStore, battleModeStore)
@@ -102,10 +109,11 @@ namespace RPGFramework.DebugRoom
 
             m_UI = new DebugRoomUI(document.rootVisualElement, audioIntentPlayer, pageNames);
 
-            m_UI.RowChosen  += OnRowChosen;
-            m_UI.RowStepped += OnRowStepped;
-            m_UI.PageChosen += OnPageChosen;
-            m_UI.StepChosen += OnStepChosen;
+            m_UI.RowChosen   += OnRowChosen;
+            m_UI.RowStepped  += OnRowStepped;
+            m_UI.PageChosen  += OnPageChosen;
+            m_UI.StepChosen  += OnStepChosen;
+            m_UI.NameEntered += OnNameEntered;
         }
 
         // Back from a battle the room shows its battles again, and the music the battle paused carries on, as the
@@ -159,10 +167,20 @@ namespace RPGFramework.DebugRoom
             return Task.CompletedTask;
         }
 
-        // Cancel closes the list on top; every press is the room's.
+        // Cancel closes the name being typed, or else the list on top; every press is the room's.
         bool IInputContext.Handle(ControlSlot slot)
         {
-            if (!m_Busy && slot == ControlSlot.Secondary)
+            if (m_Busy || slot != ControlSlot.Secondary)
+            {
+                return true;
+            }
+
+            if (m_Naming != null)
+            {
+                PlaySound(AudioIntent.Cancel);
+                CloseNaming();
+            }
+            else
             {
                 Back();
             }
@@ -239,7 +257,7 @@ namespace RPGFramework.DebugRoom
         // Ten times larger each time, back to one after the largest.
         private void OnStepChosen()
         {
-            if (m_Busy)
+            if (IsWaiting())
             {
                 return;
             }
@@ -266,7 +284,7 @@ namespace RPGFramework.DebugRoom
 
         private void OnPageChosen(int page)
         {
-            if (m_Busy)
+            if (IsWaiting())
             {
                 return;
             }
@@ -277,7 +295,7 @@ namespace RPGFramework.DebugRoom
 
         private void OnRowChosen(int row)
         {
-            if (!m_Busy)
+            if (!IsWaiting())
             {
                 ChooseAsync(row).FireAndForget();
             }
@@ -318,6 +336,14 @@ namespace RPGFramework.DebugRoom
                 return;
             }
 
+            if (choice.Naming != null)
+            {
+                m_Naming    = choice.Naming;
+                m_NamingRow = row;
+                m_UI.AskForName(m_Naming.Prompt);
+                return;
+            }
+
             if (choice.List != null)
             {
                 m_Levels[m_Levels.Count - 1] = new DebugRoomLevel(Top(), row);
@@ -331,7 +357,7 @@ namespace RPGFramework.DebugRoom
 
         private void OnRowStepped(int row, int direction)
         {
-            if (m_Busy)
+            if (IsWaiting())
             {
                 return;
             }
@@ -346,6 +372,43 @@ namespace RPGFramework.DebugRoom
 
             PlaySound(AudioIntent.Navigate);
             m_UI.SetRowText(row, list.GetRowText(row));
+        }
+
+        // A name the list cannot take leaves the field open for another.
+        private void OnNameEntered(string name)
+        {
+            if (m_Busy || m_Naming == null)
+            {
+                return;
+            }
+
+            DebugRoomChoice choice = m_Naming.Name(name);
+
+            if (choice.IsRefused)
+            {
+                PlaySound(AudioIntent.Error);
+                return;
+            }
+
+            if (choice.Sounds)
+            {
+                PlaySound(AudioIntent.Navigate);
+            }
+
+            CloseNaming();
+        }
+
+        private void CloseNaming()
+        {
+            m_Naming = null;
+            m_UI.CloseNameEntry();
+            ShowTop(m_NamingRow);
+        }
+
+        // While a name is typed, only the name entry and Cancel act.
+        private bool IsWaiting()
+        {
+            return m_Busy || m_Naming != null;
         }
 
         private void Leave(byte outcome)

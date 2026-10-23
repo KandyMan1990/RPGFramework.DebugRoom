@@ -5,6 +5,10 @@
         <ui:VisualElement name="Pages" class="debug-room__pages"/>
         <ui:Label name="PathLabel" class="rpg-ui-label debug-room__path"/>
         <ui:ScrollView name="Rows" mode="Vertical" horizontal-scroller-visibility="Hidden" class="debug-room__rows"/>
+        <ui:VisualElement name="NameEntry" class="debug-room__name-entry">
+            <ui:Label name="NamePrompt" class="rpg-ui-label debug-room__name-prompt"/>
+            <ui:TextField name="NameField" class="debug-room__name-field"/>
+        </ui:VisualElement>
         <ui:Label name="HintLabel" class="rpg-ui-label debug-room__hint"/>
     </ui:VisualElement>
 </ui:UXML>
