@@ -50,7 +50,18 @@ namespace RPGFramework.DebugRoom.Authoring
         internal void TakeFrom(VariableMapAsset map, IPersistentValues values, byte[] bank)
         {
             IReadOnlyList<PersistentValue> persistent = values.Values;
-            List<ScenarioValue>            taken      = new List<ScenarioValue>();
+            int                            count      = 0;
+
+            for (int i = 0; i < persistent.Count; i++)
+            {
+                if (values.Read(bank, persistent[i]) != persistent[i].Default)
+                {
+                    count++;
+                }
+            }
+
+            ScenarioValue[] taken = new ScenarioValue[count];
+            int             next  = 0;
 
             for (int i = 0; i < persistent.Count; i++)
             {
@@ -58,12 +69,12 @@ namespace RPGFramework.DebugRoom.Authoring
 
                 if (bits != persistent[i].Default)
                 {
-                    taken.Add(new ScenarioValue(persistent[i], bits));
+                    taken[next++] = new ScenarioValue(persistent[i], bits);
                 }
             }
 
             m_VariableMap = map;
-            m_Values      = taken.ToArray();
+            m_Values      = taken;
         }
 
         private void Reset()

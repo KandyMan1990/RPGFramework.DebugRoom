@@ -89,18 +89,34 @@ namespace RPGFramework.DebugRoom
         // Every flag but the battle mode's, which a battle's own flags never carry.
         private static BattleFlags[] BattleOwnFlags()
         {
-            BattleFlags[]     all   = (BattleFlags[])Enum.GetValues(typeof(BattleFlags));
-            List<BattleFlags> flags = new List<BattleFlags>(all.Length);
+            BattleFlags[] all   = (BattleFlags[])Enum.GetValues(typeof(BattleFlags));
+            int           count = 0;
 
             for (int i = 0; i < all.Length; i++)
             {
-                if (all[i] != BattleFlags.DEFAULT && Array.IndexOf(m_ModeFlags, all[i]) < 0)
+                if (IsBattleOwn(all[i]))
                 {
-                    flags.Add(all[i]);
+                    count++;
                 }
             }
 
-            return flags.ToArray();
+            BattleFlags[] flags = new BattleFlags[count];
+            int           next  = 0;
+
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (IsBattleOwn(all[i]))
+                {
+                    flags[next++] = all[i];
+                }
+            }
+
+            return flags;
+        }
+
+        private static bool IsBattleOwn(BattleFlags flag)
+        {
+            return flag != BattleFlags.DEFAULT && Array.IndexOf(m_ModeFlags, flag) < 0;
         }
     }
 }

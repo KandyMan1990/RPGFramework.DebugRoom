@@ -23,20 +23,37 @@ namespace RPGFramework.DebugRoom.Authoring
         /// <summary>Every scenario in the project with a variable map to be written by.</summary>
         internal ScenarioAsset[] FindAll()
         {
-            string[]            guids     = AssetDatabase.FindAssets("t:" + nameof(ScenarioAsset));
-            List<ScenarioAsset> scenarios = new List<ScenarioAsset>(guids.Length);
+            string[]        guids  = AssetDatabase.FindAssets("t:" + nameof(ScenarioAsset));
+            ScenarioAsset[] loaded = new ScenarioAsset[guids.Length];
+            int             count  = 0;
 
             for (int i = 0; i < guids.Length; i++)
             {
-                ScenarioAsset scenario = AssetDatabase.LoadAssetAtPath<ScenarioAsset>(AssetDatabase.GUIDToAssetPath(guids[i]));
+                loaded[i] = AssetDatabase.LoadAssetAtPath<ScenarioAsset>(AssetDatabase.GUIDToAssetPath(guids[i]));
 
-                if (scenario != null && scenario.VariableMap != null)
+                if (IsWritable(loaded[i]))
                 {
-                    scenarios.Add(scenario);
+                    count++;
                 }
             }
 
-            return scenarios.ToArray();
+            ScenarioAsset[] scenarios = new ScenarioAsset[count];
+            int             next      = 0;
+
+            for (int i = 0; i < loaded.Length; i++)
+            {
+                if (IsWritable(loaded[i]))
+                {
+                    scenarios[next++] = loaded[i];
+                }
+            }
+
+            return scenarios;
+        }
+
+        private static bool IsWritable(ScenarioAsset scenario)
+        {
+            return scenario != null && scenario.VariableMap != null;
         }
 
         /// <summary>The scenario as a save file, as the game would have written one in that state.</summary>
