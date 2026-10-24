@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RPGFramework.Core.Audio;
 using RPGFramework.Core.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,8 +10,8 @@ namespace RPGFramework.DebugRoom
     /// What the room shows, in the layout its scene's document gives it: a button for each page and one for the size of
     /// a step along the top, reached by moving up from the first row; the open lists' path; the rows of the one on top;
     /// what the controls do; and a text field for a name, opened when one is asked for. It needs only the moves, submit
-    /// and cancel every menu has, and a keyboard to type a name. It reports the player's choices to the room, which
-    /// decides what follows and plays its sounds; only the cursor's move sounds here, as in the menus.
+    /// and cancel every menu has, and a keyboard to type a name. It reports the player's choices and cursor moves to the
+    /// room, which decides what follows and plays every sound.
     /// </summary>
     internal sealed class DebugRoomUI
     {
@@ -22,6 +21,7 @@ namespace RPGFramework.DebugRoom
         internal event Action<int> RowChosen;
         internal event Action<int> PageChosen;
         internal event Action      StepChosen;
+        internal event Action      CursorMoved;
 
         /// <summary>Enter was pressed in the name entry, with the name typed.</summary>
         internal event Action<string> NameEntered;
@@ -41,11 +41,9 @@ namespace RPGFramework.DebugRoom
         private readonly SelectionScope    m_Selection;
         private readonly List<RPGUIButton> m_Buttons;
 
-        private bool          m_InputEnabled;
         private int           m_Page;
-        private VisualElement m_QuietFocus;
 
-        internal DebugRoomUI(VisualElement root, IAudioIntentPlayer audioIntentPlayer, string[] pageNames)
+        internal DebugRoomUI(VisualElement root, string[] pageNames)
         {
             VisualElement room  = root.Q("DebugRoom");
             VisualElement pages = room.Q("Pages");
@@ -59,14 +57,11 @@ namespace RPGFramework.DebugRoom
             m_PageButtons  = new RPGUIButton[pageNames.Length];
             m_StepButton   = new RPGUIButton();
             m_TopButtons   = new RPGUIButton[pageNames.Length + 1];
-            m_Selection    = new SelectionScope(room, audioIntentPlayer, AudioContext.Menu);
+            m_Selection    = new SelectionScope(room);
             m_Buttons      = new List<RPGUIButton>();
-            m_InputEnabled = false;
             m_Page         = 0;
-            m_QuietFocus   = null;
 
-            root.RegisterCallback<FocusInEvent>(OnFocusInBeforeScope, TrickleDown.TrickleDown);
-            root.RegisterCallback<FocusInEvent>(OnFocusInAfterScope);
+            m_Selection.Moved += () => CursorMoved?.Invoke();
 
             // Keys bound to navigation or submit are letters too, so as a name is typed they move nothing and choose
             // nothing; Enter alone gives the name.
@@ -99,7 +94,6 @@ namespace RPGFramework.DebugRoom
 
         internal void SetInputEnabled(bool enabled)
         {
-            m_InputEnabled = enabled;
             m_Selection.SetInputEnabled(enabled);
         }
 
@@ -154,7 +148,6 @@ namespace RPGFramework.DebugRoom
 
             RPGUIButton focused = texts.Length == 0 ? m_PageButtons[m_Page] : m_Buttons[focusedRow];
 
-            m_QuietFocus = focused;
             focused.Focus();
 
             // Rows just added have no layout to scroll to until the next one.
@@ -166,14 +159,13 @@ namespace RPGFramework.DebugRoom
             m_Buttons[row].text = text;
         }
 
-        /// <summary>Opens the name entry, empty, with the cursor in it and without its sound.</summary>
+        /// <summary>Opens the name entry, empty, with the cursor in it.</summary>
         internal void AskForName(string prompt)
         {
             m_NamePrompt.text = prompt;
             m_NameField.SetValueWithoutNotify(string.Empty);
             m_NameEntry.AddToClassList(OPEN_NAME_ENTRY_CLASS);
 
-            m_QuietFocus = m_NameField;
             m_NameField.Focus();
         }
 
@@ -216,39 +208,6 @@ namespace RPGFramework.DebugRoom
             {
                 first.Up = m_PageButtons[m_Page];
             }
-        }
-
-        // The selection scope sounds every focus move while input is on, and UI Toolkit may deliver the focus after the
-        // call that asked for it has returned, so a focus the room makes itself, after a sound of its own, is kept quiet
-        // by turning the scope's input off around its delivery, above and below the scope's own handler.
-        private void OnFocusInBeforeScope(FocusInEvent evt)
-        {
-            if (!IsQuiet(evt))
-            {
-                m_QuietFocus = null;
-                return;
-            }
-
-            m_Selection.SetInputEnabled(false);
-        }
-
-        private void OnFocusInAfterScope(FocusInEvent evt)
-        {
-            if (!IsQuiet(evt))
-            {
-                return;
-            }
-
-            m_QuietFocus = null;
-            m_Selection.SetInputEnabled(m_InputEnabled);
-        }
-
-        // A text field passes its focus to the element inside it that takes the text.
-        private bool IsQuiet(FocusInEvent evt)
-        {
-            VisualElement target = evt.target as VisualElement;
-
-            return m_QuietFocus != null && target != null && (target == m_QuietFocus || m_QuietFocus.Contains(target));
         }
 
         private void AddButton()

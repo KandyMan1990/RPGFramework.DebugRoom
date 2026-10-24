@@ -107,13 +107,14 @@ namespace RPGFramework.DebugRoom
 
             UIDocument document = m_ModuleScene.Find<UIDocument>();
 
-            m_UI = new DebugRoomUI(document.rootVisualElement, audioIntentPlayer, pageNames);
+            m_UI = new DebugRoomUI(document.rootVisualElement, pageNames);
 
             m_UI.RowChosen   += OnRowChosen;
             m_UI.RowStepped  += OnRowStepped;
             m_UI.PageChosen  += OnPageChosen;
             m_UI.StepChosen  += OnStepChosen;
             m_UI.NameEntered += OnNameEntered;
+            m_UI.CursorMoved += OnCursorMoved;
         }
 
         // Back from a battle the room shows its battles again, and the music the battle paused carries on, as the
@@ -417,6 +418,11 @@ namespace RPGFramework.DebugRoom
             SetInputEnabled(false);
 
             m_CoreModule.RequestModuleChangeAsync(outcome).FireAndForget();
+        }
+
+        private void OnCursorMoved()
+        {
+            PlaySound(AudioIntent.Navigate);
         }
 
         private void PlaySound(AudioIntent intent)
