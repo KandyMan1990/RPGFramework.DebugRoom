@@ -2,25 +2,54 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using RPGFramework.Core;
 using RPGFramework.Core.Memory;
+using RPGFramework.Core.SharedTypes;
 
 namespace RPGFramework.DebugRoom
 {
     /// <summary>
-    /// Every variable in the map, by name, each value shown and set in its width: a single value on the page itself, an
-    /// array's elements, a record's fields and an array of records' records each in a list of their own.
+    /// Every Persistent and Session variable in the map, by name, each value shown and set in its width: a single value
+    /// on the page itself, an array's elements, a record's fields and an array of records' records each in a list of
+    /// their own.
     /// </summary>
     internal sealed class VariablesPage : IDebugRoomList
     {
-        private readonly IMemoryService                    m_MemoryService;
-        private readonly IReadOnlyList<VariableDefinition> m_Variables;
+        private readonly IMemoryService       m_MemoryService;
+        private readonly VariableDefinition[] m_Variables;
 
         string IDebugRoomList.Title => "Variables";
-        int IDebugRoomList.   Count => m_Variables.Count;
+        int IDebugRoomList.   Count => m_Variables.Length;
 
         internal VariablesPage(IMemoryService memoryService, IVariableMap variableMap)
         {
             m_MemoryService = memoryService;
-            m_Variables     = variableMap.Variables;
+            m_Variables     = InMemoryService(variableMap.Variables);
+        }
+
+        // The banks the memory service holds. A Temp variable is a running script's own, with no value outside it.
+        private static VariableDefinition[] InMemoryService(IReadOnlyList<VariableDefinition> variables)
+        {
+            int count = 0;
+
+            for (int i = 0; i < variables.Count; i++)
+            {
+                if (variables[i].Bank is MemoryBank.Persistent or MemoryBank.Session)
+                {
+                    count++;
+                }
+            }
+
+            VariableDefinition[] inMemoryService = new VariableDefinition[count];
+            int                  next            = 0;
+
+            for (int i = 0; i < variables.Count; i++)
+            {
+                if (variables[i].Bank is MemoryBank.Persistent or MemoryBank.Session)
+                {
+                    inMemoryService[next++] = variables[i];
+                }
+            }
+
+            return inMemoryService;
         }
 
         string IDebugRoomList.GetRowText(int row)

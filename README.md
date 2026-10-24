@@ -17,7 +17,7 @@ title's button to it and its routes are compiled in; leave it out and none of it
 | --- | --- | --- |
 | **Fields** | every field, by name, each opening its spawn points, read from the field's bundle | jumps there |
 | **Scenarios** | every scenario, by name, those saved on a device marked | saves the playthrough as a scenario under a name you type; loads one either to go straight to where it was saved, or to stay in the room |
-| **Variables** | every variable in the map; an array's elements, a record's fields and an array's records each open a list of their own | shows each value in its width; left and right step it, held at the width's limits, and choosing a bool turns it over |
+| **Variables** | every Persistent and Session variable in the map — a Temp one is a running script's own; an array's elements, a record's fields and an array's records each open a list of their own | shows each value in its width; left and right step it, held at the width's limits, and choosing a bool turns it over |
 | **Audio** | every song, each opening Play, Crossfade and its stem states; every sound | plays a song, crossfades to it, fades the playing song to a stem state, plays a sound, stops the music, and steps both volumes for the session |
 | **Battles** | every arena, then each battle flag, then the battle mode's two game-over flags | starts a battle in the arena with the flags ticked; a battle comes back to the room |
 
