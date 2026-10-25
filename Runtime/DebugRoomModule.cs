@@ -30,7 +30,7 @@ namespace RPGFramework.DebugRoom
     /// is reported for the game's module router to carry out, a battle coming back here, and backing out of the first
     /// list goes back to the title.
     /// </summary>
-    public sealed class DebugRoomModule : IDebugRoomModule, IInputContext
+    internal sealed class DebugRoomModule : IDebugRoomModule, IInputContext
     {
         private const int   BATTLES_PAGE         = 4;
         private const int   LARGEST_STEP         = 1000000;

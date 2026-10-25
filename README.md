@@ -55,9 +55,11 @@ to the device's persistent data, in `DebugRoom/Scenarios`, listed with the build
 Everything below sits inside `#if ENABLE_RPG_FRAMEWORK_DEBUG`, or in an assembly with it as a define constraint.
 
 1. **A scene for the room**, named for `ISceneDatabase`, with a `UIDocument` showing this package's
-   `Runtime/UI/DebugRoom.uxml`, an `InputAdapter` with your UI actions, and a `SceneInstallerMonoBehaviour` with the
-   room's installer. List the scene in the debug profile's own scene list, so other profiles leave it out.
-2. **The room's installer**, binding your generated databases and the module:
+   `Runtime/UI/DebugRoom.uxml`, an `InputAdapter` with your UI actions, a **Debug Room Module** object (GameObject >
+   RPG Framework > Debug Room > Debug Room Module), which binds the room itself, and a `SceneInstallerMonoBehaviour`
+   with the room's installer. List the scene in the debug profile's own scene list, so other profiles leave it out.
+2. **The room's installer**, binding your generated databases, and Field's spawn points for the room, as the room
+   cannot reference Field:
 
    ```csharp
    internal sealed class DebugRoomSceneInstaller : SceneInstallerBase
@@ -67,7 +69,6 @@ Everything below sits inside `#if ENABLE_RPG_FRAMEWORK_DEBUG`, or in an assembly
            container.BindInterfacesToSelfSingleton<FieldDatabase>();
            container.BindSingleton<IDebugSpawnPointLoader, DebugSpawnPointLoader>();
            container.BindSingleton<IDebugBattleArenaDatabase, BattleArenaDatabase>();
-           container.BindSingleton<IDebugRoomModule, DebugRoomModule>();
        }
    }
    ```
