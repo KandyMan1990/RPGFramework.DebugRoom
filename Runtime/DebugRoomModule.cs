@@ -189,7 +189,7 @@ namespace RPGFramework.DebugRoom
             return true;
         }
 
-        bool IInputContext.HandleMove(Vector2 move) => true;
+        bool IInputContext.TakesMovement => true;
 
         private void SetInputEnabled(bool enabled)
         {
