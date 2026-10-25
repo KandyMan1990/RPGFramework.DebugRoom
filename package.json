@@ -13,12 +13,12 @@
     "url": "https://github.com/KandyMan1990/RPGFramework.DebugRoom"
   },
   "dependencies": {
-    "com.rpgframework.audio": "4.1.1",
+    "com.rpgframework.audio": "5.0.0",
     "com.rpgframework.battle.sharedtypes": "0.2.0",
     "com.rpgframework.core": "0.8.0",
     "com.rpgframework.core.sharedtypes": "0.3.0",
     "com.rpgframework.debugroom.sharedtypes": "0.1.0",
-    "com.rpgframework.di": "4.0.3",
+    "com.rpgframework.di": "5.0.0",
     "com.rpgframework.field.sharedtypes": "0.3.0",
     "com.rpgframework.hashing": "2.0.2"
   }
