@@ -169,9 +169,9 @@ namespace RPGFramework.DebugRoom
         }
 
         // Cancel closes the name being typed, or else the list on top; every press is the room's.
-        bool IInputContext.Handle(ControlSlot slot)
+        bool IInputContext.Handle(ulong action)
         {
-            if (m_Busy || slot != ControlSlot.Secondary)
+            if (m_Busy || action != CoreActions.Cancel)
             {
                 return true;
             }
