@@ -39,7 +39,8 @@ namespace RPGFramework.DebugRoom
         private readonly ICoreModule          m_CoreModule;
         private readonly IDIResolver          m_DIResolver;
         private readonly IInputRouter         m_InputRouter;
-        private readonly IAudioIntentPlayer   m_AudioIntentPlayer;
+        private readonly ISfxPlayer           m_SfxPlayer;
+        private readonly ISystemSoundConfig   m_SystemSounds;
         private readonly IPausedMusicStore    m_PausedMusicStore;
         private readonly IMusicPlayer         m_MusicPlayer;
         private readonly IModuleScene         m_ModuleScene;
@@ -57,7 +58,7 @@ namespace RPGFramework.DebugRoom
         public DebugRoomModule(ICoreModule               coreModule,
                                IDIResolver               diResolver,
                                IInputRouter              inputRouter,
-                               IAudioIntentPlayer        audioIntentPlayer,
+                               ISystemSoundConfig        systemSounds,
                                IDebugSaveDataService     saveDataService,
                                IPlayTimeStore            playTimeStore,
                                IPausedMusicStore         pausedMusicStore,
@@ -78,7 +79,8 @@ namespace RPGFramework.DebugRoom
             m_CoreModule        = coreModule;
             m_DIResolver        = diResolver;
             m_InputRouter       = inputRouter;
-            m_AudioIntentPlayer = audioIntentPlayer;
+            m_SfxPlayer         = sfxPlayer;
+            m_SystemSounds      = systemSounds;
             m_PausedMusicStore  = pausedMusicStore;
             m_MusicPlayer       = musicPlayer;
             m_ModuleScene       = moduleScene;
@@ -178,7 +180,7 @@ namespace RPGFramework.DebugRoom
 
             if (m_Naming != null)
             {
-                PlaySound(AudioIntent.Cancel);
+                PlaySound(m_SystemSounds.Cancel);
                 CloseNaming();
             }
             else
@@ -265,13 +267,13 @@ namespace RPGFramework.DebugRoom
 
             m_Step = m_Step >= LARGEST_STEP ? 1 : m_Step * 10;
 
-            PlaySound(AudioIntent.Navigate);
+            PlaySound(m_SystemSounds.Cursor);
             ShowStep();
         }
 
         private void Back()
         {
-            PlaySound(AudioIntent.Cancel);
+            PlaySound(m_SystemSounds.Cancel);
 
             if (m_Levels.Count == 1)
             {
@@ -290,7 +292,7 @@ namespace RPGFramework.DebugRoom
                 return;
             }
 
-            PlaySound(AudioIntent.Navigate);
+            PlaySound(m_SystemSounds.Cursor);
             ShowPage(page);
         }
 
@@ -322,13 +324,13 @@ namespace RPGFramework.DebugRoom
 
             if (choice.IsRefused)
             {
-                PlaySound(AudioIntent.Error);
+                PlaySound(m_SystemSounds.Error);
                 return;
             }
 
             if (choice.Sounds)
             {
-                PlaySound(AudioIntent.Navigate);
+                PlaySound(m_SystemSounds.Confirm);
             }
 
             if (choice.Outcome != 0)
@@ -367,11 +369,11 @@ namespace RPGFramework.DebugRoom
 
             if (!list.Step(row, direction * m_Step))
             {
-                PlaySound(AudioIntent.Error);
+                PlaySound(m_SystemSounds.Error);
                 return;
             }
 
-            PlaySound(AudioIntent.Navigate);
+            PlaySound(m_SystemSounds.Cursor);
             m_UI.SetRowText(row, list.GetRowText(row));
         }
 
@@ -387,13 +389,13 @@ namespace RPGFramework.DebugRoom
 
             if (choice.IsRefused)
             {
-                PlaySound(AudioIntent.Error);
+                PlaySound(m_SystemSounds.Error);
                 return;
             }
 
             if (choice.Sounds)
             {
-                PlaySound(AudioIntent.Navigate);
+                PlaySound(m_SystemSounds.Confirm);
             }
 
             CloseNaming();
@@ -422,12 +424,15 @@ namespace RPGFramework.DebugRoom
 
         private void OnCursorMoved()
         {
-            PlaySound(AudioIntent.Navigate);
+            PlaySound(m_SystemSounds.Cursor);
         }
 
-        private void PlaySound(AudioIntent intent)
+        private void PlaySound(ulong sound)
         {
-            m_AudioIntentPlayer.PlayAsync(intent, AudioContext.Menu).FireAndForget();
+            if (sound != 0)
+            {
+                m_SfxPlayer.PlayAsync(sound).FireAndForget();
+            }
         }
     }
 }
