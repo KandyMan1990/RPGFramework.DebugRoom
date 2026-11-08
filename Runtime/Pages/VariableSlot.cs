@@ -36,7 +36,7 @@ namespace RPGFramework.DebugRoom
                        VariableWidth.Short  => ((short)memory.ReadUshort(m_Bank, m_Address)).ToString(CultureInfo.InvariantCulture),
                        VariableWidth.UShort => memory.ReadUshort(m_Bank, m_Address).ToString(CultureInfo.InvariantCulture),
                        VariableWidth.Int    => memory.ReadInt(m_Bank, m_Address).ToString(CultureInfo.InvariantCulture),
-                       VariableWidth.UInt   => ((uint)memory.ReadInt(m_Bank, m_Address)).ToString(CultureInfo.InvariantCulture),
+                       VariableWidth.UInt   => memory.ReadUint(m_Bank, m_Address).ToString(CultureInfo.InvariantCulture),
                        VariableWidth.Long   => ((long)memory.ReadUlong(m_Bank, m_Address)).ToString(CultureInfo.InvariantCulture),
                        VariableWidth.ULong  => memory.ReadUlong(m_Bank, m_Address).ToString(CultureInfo.InvariantCulture),
                        VariableWidth.Float  => memory.ReadFloat(m_Bank, m_Address).ToString(CultureInfo.InvariantCulture),
@@ -113,7 +113,7 @@ namespace RPGFramework.DebugRoom
                        VariableWidth.Short  => (short)memory.ReadUshort(m_Bank, m_Address),
                        VariableWidth.UShort => memory.ReadUshort(m_Bank, m_Address),
                        VariableWidth.Int    => memory.ReadInt(m_Bank, m_Address),
-                       VariableWidth.UInt   => (uint)memory.ReadInt(m_Bank, m_Address),
+                       VariableWidth.UInt   => memory.ReadUint(m_Bank, m_Address),
                        _                    => (long)memory.ReadUlong(m_Bank, m_Address)
                    };
         }
@@ -131,8 +131,10 @@ namespace RPGFramework.DebugRoom
                     memory.WriteUshort(m_Bank, m_Address, (ushort)value);
                     break;
                 case VariableWidth.Int:
-                case VariableWidth.UInt:
                     memory.WriteInt(m_Bank, m_Address, (int)value);
+                    break;
+                case VariableWidth.UInt:
+                    memory.WriteUint(m_Bank, m_Address, (uint)value);
                     break;
                 default:
                     memory.WriteUlong(m_Bank, m_Address, (ulong)value);
