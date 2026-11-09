@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using RPGFramework.Battle.SharedTypes;
 using RPGFramework.Battle.SharedTypes.Stores;
 using RPGFramework.DebugRoom.SharedTypes.Constants;
+using RPGFramework.Hashing;
 
 namespace RPGFramework.DebugRoom
 {
@@ -55,7 +56,7 @@ namespace RPGFramework.DebugRoom
         {
             if (row < m_ArenaNames.Count)
             {
-                m_BattleArgsStore.Set(new BattleArgs(row, 0, m_Flags, 0, 0));
+                m_BattleArgsStore.Set(new BattleArgs(0, Fnv1a64.Hash(m_ArenaNames[row]), m_Flags, 0));
 
                 return Task.FromResult(DebugRoomChoice.Leave(DebugRoomOutcomes.BATTLE));
             }
