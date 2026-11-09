@@ -25,7 +25,7 @@ title's button to it and its routes are compiled in; leave it out and none of it
 The buttons along the top choose a page, and the last one the size of a step — 1, 10, up to 1,000,000 — reached by
 moving up from the first row: a value is stepped, not typed, so a large one is reached by a larger step. Cancel closes
 the list on top, and from a page's own list goes back to the title. It needs only the moves, submit and cancel every
-menu has, and its sounds are your audio intents', as the menus' are. The five pages are the room's own, as a game
+menu has, and its sounds are your game's system sounds, as the menus' are. The five pages are the room's own, as a game
 cannot add pages yet, and their text is English rather than localised, as the room is for the people making the game.
 
 **The room plays the playthrough it is opened in.** From the title, the Debug Room button begins one as New Game does:
@@ -100,8 +100,8 @@ Everything below sits inside `#if ENABLE_RPG_FRAMEWORK_DEBUG`, or in an assembly
 
 4. **Its module id and scene**: `DebugRoomConstants.MODULE_ID => typeof(IDebugRoomModule)` in your `IModuleDatabase`,
    and its scene's name for `IDebugRoomModule` in your `ISceneDatabase`.
-5. **The way back from a field**: give your field scene's `InputAdapter` actions for both shoulders, both triggers and
-   Select; the buttons they are bound to are the combination. Five keys held at once are awkward on a keyboard, and
+5. **The way back from a field**: give your field scene's `InputAdapter` map the actions `ShoulderLeft`, `TriggerLeft`,
+   `ShoulderRight`, `TriggerRight` and `Select`; the buttons they are bound to are the combination. Five keys held at once are awkward on a keyboard, and
    some keyboards do not register them all, so bind one key to all five actions as well: holding it holds the whole
    combination.
 
