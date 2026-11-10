@@ -15,10 +15,10 @@
   "dependencies": {
     "com.rpgframework.audio": "6.0.0",
     "com.rpgframework.battle.sharedtypes": "0.2.0",
-    "com.rpgframework.core": "0.9.0",
+    "com.rpgframework.core": "0.9.1",
     "com.rpgframework.core.sharedtypes": "0.3.0",
     "com.rpgframework.debugroom.sharedtypes": "0.1.0",
-    "com.rpgframework.di": "5.0.0",
+    "com.rpgframework.di": "6.0.0",
     "com.rpgframework.field.sharedtypes": "0.3.0",
     "com.rpgframework.hashing": "2.0.2"
   }
