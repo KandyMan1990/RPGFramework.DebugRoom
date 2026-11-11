@@ -55,26 +55,27 @@ namespace RPGFramework.DebugRoom
         private int              m_Step;
         private bool             m_Busy;
 
-        public DebugRoomModule(ICoreModule               coreModule,
-                               IDIResolver               diResolver,
-                               IInputRouter              inputRouter,
-                               ISystemSoundConfig        systemSounds,
-                               IDebugSaveDataService     saveDataService,
-                               IPlayTimeStore            playTimeStore,
-                               IPausedMusicStore         pausedMusicStore,
-                               IMemoryService            memoryService,
-                               IVariableMap              variableMap,
-                               IMusicPlayer              musicPlayer,
-                               ISfxPlayer                sfxPlayer,
-                               IDebugMusicAssetProvider  musicProvider,
-                               IDebugSfxAssetProvider    sfxProvider,
-                               IDebugFieldDatabase       fieldDatabase,
-                               IDebugSpawnPointLoader    spawnPointLoader,
-                               IFieldArgsStore           fieldArgsStore,
-                               IDebugBattleArenaDatabase arenaDatabase,
-                               IBattleArgsStore          battleArgsStore,
-                               IBattleModeStore          battleModeStore,
-                               IModuleScene              moduleScene)
+        public DebugRoomModule(ICoreModule                   coreModule,
+                               IDIResolver                   diResolver,
+                               IInputRouter                  inputRouter,
+                               ISystemSoundConfig            systemSounds,
+                               IDebugSaveDataService         saveDataService,
+                               IPlayTimeStore                playTimeStore,
+                               IPausedMusicStore             pausedMusicStore,
+                               IMemoryService                memoryService,
+                               IVariableMap                  variableMap,
+                               IMusicPlayer                  musicPlayer,
+                               ISfxPlayer                    sfxPlayer,
+                               IDebugMusicAssetProvider      musicProvider,
+                               IDebugSfxAssetProvider        sfxProvider,
+                               IDebugFieldDatabase           fieldDatabase,
+                               IDebugSpawnPointLoader        spawnPointLoader,
+                               IFieldArgsStore               fieldArgsStore,
+                               IDebugBattleEncounterDatabase encounterDatabase,
+                               IDebugBattleArenaDatabase     arenaDatabase,
+                               IBattleArgsStore              battleArgsStore,
+                               IBattleModeStore              battleModeStore,
+                               IModuleScene                  moduleScene)
         {
             m_CoreModule        = coreModule;
             m_DIResolver        = diResolver;
@@ -97,7 +98,7 @@ namespace RPGFramework.DebugRoom
                           new ScenariosPage(saveDataService, playTimeStore),
                           new VariablesPage(memoryService, variableMap),
                           new AudioPage(musicProvider, sfxProvider, musicPlayer, sfxPlayer),
-                          new BattlesPage(arenaDatabase, battleArgsStore, battleModeStore)
+                          new BattlesPage(encounterDatabase, arenaDatabase, battleArgsStore, battleModeStore)
                       };
 
             string[] pageNames = new string[m_Pages.Length];

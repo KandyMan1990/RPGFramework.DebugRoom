@@ -2,7 +2,7 @@
 
 A module for the people making the game: jump to any field and spawn point, save and load named scenarios, set any
 variable, try any song or sound and start any battle, without playing through. Its pages read the game's own data —
-the field database, the variable map, the audio providers, the arena database — so it grows with the game without being
+the field database, the variable map, the audio providers, the arena and encounter databases — so it grows with the game without being
 edited.
 
 Requires Unity 6000.6 or newer, RPGFramework.Core, RPGFramework.Audio, RPGFramework.DI, RPGFramework.Hashing, and the
@@ -20,7 +20,7 @@ title's button to it and its routes are compiled in; leave it out and none of it
 | **Scenarios** | every scenario, by name, those saved on a device marked | saves the playthrough as a scenario under a name you type; loads one either to go straight to where it was saved, or to stay in the room |
 | **Variables** | every Persistent and Session variable in the map — a Temp one is a running script's own; an array's elements, a record's fields and an array's records each open a list of their own | shows each value in its width; left and right step it, held at the width's limits, and choosing a bool turns it over |
 | **Audio** | every song, each opening Play, Crossfade and its stem states; every sound | plays a song, crossfades to it, fades the playing song to a stem state, plays a sound, stops the music, and steps both volumes for the session |
-| **Battles** | every arena, then each battle flag, then the battle mode's two game-over flags | starts a battle in the arena with the flags ticked; a battle comes back to the room |
+| **Battles** | the arena, stepped through your arenas, every encounter, then each battle flag, then the battle mode's two game-over flags | starts a battle of the encounter in the arena with the flags ticked; a battle comes back to the room |
 
 The buttons along the top choose a page, and the last one the size of a step — 1, 10, up to 1,000,000 — reached by
 moving up from the first row: a value is stepped, not typed, so a large one is reached by a larger step. Cancel closes
@@ -62,17 +62,21 @@ Everything below sits inside `#if ENABLE_RPG_FRAMEWORK_DEBUG`, or in an assembly
    `Runtime/UI/DebugRoom.uxml`, an `InputAdapter` with your UI actions, a **Debug Room Module** object (GameObject >
    RPG Framework > Debug Room > Debug Room Module), which binds the room itself, and a `SceneInstallerMonoBehaviour`
    with the room's installer. List the scene in the debug profile's own scene list, so other profiles leave it out.
-2. **The room's installer**, binding your generated databases, and Field's spawn points for the room, as the room
-   cannot reference Field:
+2. **The room's installer**, binding your generated field and arena databases, Field's spawn points for the room, as
+   the room cannot reference Field, and your encounter database:
 
    ```csharp
    internal sealed class DebugRoomSceneInstaller : SceneInstallerBase
    {
+       [SerializeField]
+       private BattleEncounterDatabase m_Encounters;
+
        public override void InstallBindings(IDIContainer container)
        {
            container.BindInterfacesToSelfSingleton<FieldDatabase>();
            container.BindSingleton<IDebugSpawnPointLoader, DebugSpawnPointLoader>();
            container.BindSingleton<IDebugBattleArenaDatabase, BattleArenaDatabase>();
+           container.BindSingletonFromInstance<IDebugBattleEncounterDatabase>(m_Encounters);
        }
    }
    ```

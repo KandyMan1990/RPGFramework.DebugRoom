@@ -9,40 +9,54 @@ using RPGFramework.Hashing;
 namespace RPGFramework.DebugRoom
 {
     /// <summary>
-    /// Every arena in the game's arena database, each starting a battle there with the flags set below them, and the
-    /// battle mode's flags, which the router reads rather than a battle's own.
+    /// The arena to fight in, stepped through the game's arenas; every encounter in the game's encounter database, each
+    /// starting a battle there with the flags set below them; and the battle mode's flags, which the router reads rather
+    /// than a battle's own.
     /// </summary>
     internal sealed class BattlesPage : IDebugRoomList
     {
+        private const int ARENA_ROW = 0;
+
         private static readonly BattleFlags[] m_ModeFlags = { BattleFlags.DISABLE_GAME_OVER_ON_TIME_OUT, BattleFlags.DISABLE_GAME_OVER_ON_DEFEAT };
 
         private readonly IReadOnlyList<string> m_ArenaNames;
+        private readonly IReadOnlyList<string> m_EncounterNames;
         private readonly BattleFlags[]         m_BattleFlags;
         private readonly IBattleArgsStore      m_BattleArgsStore;
         private readonly IBattleModeStore      m_BattleModeStore;
 
         private BattleFlags m_Flags;
+        private int         m_Arena;
 
         string IDebugRoomList.Title => "Battles";
-        int IDebugRoomList.   Count => m_ArenaNames.Count + m_BattleFlags.Length + m_ModeFlags.Length;
+        int IDebugRoomList.   Count => 1 + m_EncounterNames.Count + m_BattleFlags.Length + m_ModeFlags.Length;
 
-        internal BattlesPage(IDebugBattleArenaDatabase arenaDatabase, IBattleArgsStore battleArgsStore, IBattleModeStore battleModeStore)
+        internal BattlesPage(IDebugBattleEncounterDatabase encounterDatabase, IDebugBattleArenaDatabase arenaDatabase, IBattleArgsStore battleArgsStore, IBattleModeStore battleModeStore)
         {
             m_ArenaNames      = arenaDatabase.ArenaNames;
+            m_EncounterNames  = encounterDatabase.EncounterNames;
             m_BattleFlags     = BattleOwnFlags();
             m_BattleArgsStore = battleArgsStore;
             m_BattleModeStore = battleModeStore;
             m_Flags           = BattleFlags.DEFAULT;
+            m_Arena           = 0;
         }
 
         string IDebugRoomList.GetRowText(int row)
         {
-            if (row < m_ArenaNames.Count)
+            if (row == ARENA_ROW)
             {
-                return $"Fight in {m_ArenaNames[row]}";
+                return $"In  < {m_ArenaNames[m_Arena]} >";
             }
 
-            row -= m_ArenaNames.Count;
+            row--;
+
+            if (row < m_EncounterNames.Count)
+            {
+                return $"Fight {m_EncounterNames[row]}";
+            }
+
+            row -= m_EncounterNames.Count;
 
             if (row < m_BattleFlags.Length)
             {
@@ -54,14 +68,23 @@ namespace RPGFramework.DebugRoom
 
         Task<DebugRoomChoice> IDebugRoomList.ChooseAsync(int row)
         {
-            if (row < m_ArenaNames.Count)
+            if (row == ARENA_ROW)
             {
-                m_BattleArgsStore.Set(new BattleArgs(0, Fnv1a64.Hash(m_ArenaNames[row]), m_Flags, 0));
+                m_Arena = (m_Arena + 1) % m_ArenaNames.Count;
+
+                return Task.FromResult(DebugRoomChoice.Done);
+            }
+
+            row--;
+
+            if (row < m_EncounterNames.Count)
+            {
+                m_BattleArgsStore.Set(new BattleArgs(Fnv1a64.Hash(m_EncounterNames[row]), Fnv1a64.Hash(m_ArenaNames[m_Arena]), m_Flags, 0));
 
                 return Task.FromResult(DebugRoomChoice.Leave(DebugRoomOutcomes.BATTLE));
             }
 
-            row -= m_ArenaNames.Count;
+            row -= m_EncounterNames.Count;
 
             if (row < m_BattleFlags.Length)
             {
@@ -77,7 +100,16 @@ namespace RPGFramework.DebugRoom
 
         bool IDebugRoomList.Step(int row, int steps)
         {
-            return false;
+            int arena = m_Arena + Math.Sign(steps);
+
+            if (row != ARENA_ROW || arena < 0 || arena >= m_ArenaNames.Count)
+            {
+                return false;
+            }
+
+            m_Arena = arena;
+
+            return true;
         }
 
         private static string FlagText(BattleFlags flag, BattleFlags set, string suffix)
