@@ -20,6 +20,6 @@
     "com.rpgframework.debugroom.sharedtypes": "0.1.0",
     "com.rpgframework.di": "6.0.1",
     "com.rpgframework.field.sharedtypes": "0.3.0",
-    "com.rpgframework.hashing": "2.0.2"
+    "com.rpgframework.hashing": "3.0.0"
   }
 }
