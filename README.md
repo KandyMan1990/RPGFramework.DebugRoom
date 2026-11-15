@@ -5,7 +5,7 @@ variable, try any song or sound and start any battle, without playing through. I
 the field database, the variable map, the audio providers, the arena and encounter databases — so it grows with the game without being
 edited.
 
-Requires Unity 6000.6 or newer, RPGFramework.Core, RPGFramework.Audio, RPGFramework.DI, RPGFramework.Hashing, and the
+Requires Unity 6000.7 or newer, RPGFramework.Core, RPGFramework.Audio, RPGFramework.DI, RPGFramework.Hashing, and the
 Core, Field, Battle and Debug Room shared types. **Compiled only where `ENABLE_RPG_FRAMEWORK_DEBUG` is defined**: add it
 to a build profile's scripting defines — a debug profile beside your development and release ones — and the room, the
 title's button to it and its routes are compiled in; leave it out and none of it is.

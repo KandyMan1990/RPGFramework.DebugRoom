@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "displayName": "RPG Framework Debug Room",
   "description": "A module to jump to any field and spawn point, set any variable, start any battle and try the game's audio without playing through. Compiled only where ENABLE_RPG_FRAMEWORK_DEBUG is defined",
-  "unity": "6000.6",
+  "unity": "6000.7",
   "keywords": [
     "RPG Framework",
     "Debug"

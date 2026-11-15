@@ -1,6 +1,9 @@
+using Unity.Scripting.LifecycleManagement;
+
 namespace RPGFramework.DebugRoom
 {
     /// <summary>What choosing a row did, for the room to carry on from.</summary>
+    [NoAutoStaticsCleanup]
     internal readonly struct DebugRoomChoice
     {
         /// <summary>It acted, and the room stays on the list with its rows read again.</summary>

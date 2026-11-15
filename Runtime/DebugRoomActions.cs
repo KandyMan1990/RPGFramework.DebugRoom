@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using RPGFramework.Core.Input;
+using Unity.Scripting.LifecycleManagement;
 
 namespace RPGFramework.DebugRoom
 {
@@ -9,6 +10,7 @@ namespace RPGFramework.DebugRoom
     /// The actions the debug room reads, declared for the editor's check of its scene's map: the UI map, as its pages
     /// are UI Toolkit's.
     /// </summary>
+    [NoAutoStaticsCleanup]
     internal sealed class DebugRoomActions : IRequiredActions
     {
         private static readonly RequiredAction[] m_Required =
