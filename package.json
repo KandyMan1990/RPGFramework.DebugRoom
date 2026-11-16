@@ -13,7 +13,7 @@
     "url": "https://github.com/KandyMan1990/RPGFramework.DebugRoom"
   },
   "dependencies": {
-    "com.rpgframework.audio": "7.0.0",
+    "com.rpgframework.audio": "8.0.0",
     "com.rpgframework.battle.sharedtypes": "0.2.0",
     "com.rpgframework.core": "0.9.1",
     "com.rpgframework.core.sharedtypes": "0.3.0",
