@@ -58,7 +58,8 @@
     -unity-text-align: middle-center;
 }
 
-.debug-room .rpg-ui-button-icon {
-    width: 28px;
-    height: 28px;
+.debug-room .rpg-selectable {
+    min-height: 28px;
+    padding-left: 36px;
+    background-size: 28px 28px;
 }

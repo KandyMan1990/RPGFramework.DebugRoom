@@ -17,6 +17,7 @@ namespace RPGFramework.DebugRoom
     {
         private const string CURRENT_PAGE_CLASS    = "debug-room__page--current";
         private const string OPEN_NAME_ENTRY_CLASS = "debug-room__name-entry--open";
+        private const string UI_LABEL_CLASS        = "rpg-ui-label";
 
         internal event Action<int> RowChosen;
         internal event Action<int> PageChosen;
@@ -35,11 +36,11 @@ namespace RPGFramework.DebugRoom
         private readonly VisualElement     m_NameEntry;
         private readonly Label             m_NamePrompt;
         private readonly TextField         m_NameField;
-        private readonly RPGUIButton[]     m_PageButtons;
-        private readonly RPGUIButton       m_StepButton;
-        private readonly RPGUIButton[]     m_TopButtons;
+        private readonly Label[]           m_PageButtons;
+        private readonly Label             m_StepButton;
+        private readonly Label[]           m_TopButtons;
         private readonly SelectionScope    m_Selection;
-        private readonly List<RPGUIButton> m_Buttons;
+        private readonly List<Label>       m_Buttons;
 
         private int           m_Page;
 
@@ -54,11 +55,11 @@ namespace RPGFramework.DebugRoom
             m_NameEntry    = room.Q("NameEntry");
             m_NamePrompt   = room.Q<Label>("NamePrompt");
             m_NameField    = room.Q<TextField>("NameField");
-            m_PageButtons  = new RPGUIButton[pageNames.Length];
-            m_StepButton   = new RPGUIButton();
-            m_TopButtons   = new RPGUIButton[pageNames.Length + 1];
+            m_PageButtons  = new Label[pageNames.Length];
+            m_StepButton   = NewButton();
+            m_TopButtons   = new Label[pageNames.Length + 1];
             m_Selection    = new SelectionScope(room);
-            m_Buttons      = new List<RPGUIButton>();
+            m_Buttons      = new List<Label>();
             m_Page         = 0;
 
             m_Selection.Moved += () => CursorMoved?.Invoke();
@@ -71,25 +72,25 @@ namespace RPGFramework.DebugRoom
 
             for (int i = 0; i < pageNames.Length; i++)
             {
-                int         page   = i;
-                RPGUIButton button = new RPGUIButton();
+                int   page   = i;
+                Label button = NewButton();
 
                 button.text = pageNames[i];
                 button.AddToClassList("debug-room__page");
-                button.Chosen += () => PageChosen?.Invoke(page);
 
                 pages.Add(button);
+                m_Selection.RegisterChosen(button, () => PageChosen?.Invoke(page));
                 m_PageButtons[i] = button;
                 m_TopButtons[i]  = button;
             }
 
             m_StepButton.AddToClassList("debug-room__step");
-            m_StepButton.Chosen += () => StepChosen?.Invoke();
 
             pages.Add(m_StepButton);
+            m_Selection.RegisterChosen(m_StepButton, () => StepChosen?.Invoke());
             m_TopButtons[pageNames.Length] = m_StepButton;
 
-            RPGUIButton.LinkRow(m_TopButtons, true);
+            m_Selection.LinkRow(m_TopButtons, true);
         }
 
         internal void SetInputEnabled(bool enabled)
@@ -146,7 +147,7 @@ namespace RPGFramework.DebugRoom
 
             LinkRowsToTop();
 
-            RPGUIButton focused = texts.Length == 0 ? m_PageButtons[m_Page] : m_Buttons[focusedRow];
+            Label focused = texts.Length == 0 ? m_PageButtons[m_Page] : m_Buttons[focusedRow];
 
             focused.Focus();
 
@@ -193,34 +194,43 @@ namespace RPGFramework.DebugRoom
         // The rows run down from the top's buttons, the first row's up leading back to the page's own.
         private void LinkRowsToTop()
         {
-            RPGUIButton[] rows = m_Buttons.ToArray();
+            Label[] rows = m_Buttons.ToArray();
 
-            RPGUIButton.LinkColumn(rows, false);
+            m_Selection.LinkColumn(rows, false);
 
-            RPGUIButton first = rows.Length > 0 ? rows[0] : null;
+            Label first = rows.Length > 0 ? rows[0] : null;
 
             for (int i = 0; i < m_TopButtons.Length; i++)
             {
-                m_TopButtons[i].Down = first;
+                m_Selection.SetNeighbour(m_TopButtons[i], NavigationMoveEvent.Direction.Down, first);
             }
 
             if (first != null)
             {
-                first.Up = m_PageButtons[m_Page];
+                m_Selection.SetNeighbour(first, NavigationMoveEvent.Direction.Up, m_PageButtons[m_Page]);
             }
         }
 
         private void AddButton()
         {
-            int         row    = m_Buttons.Count;
-            RPGUIButton button = new RPGUIButton();
+            int   row    = m_Buttons.Count;
+            Label button = NewButton();
 
-            button.Chosen += () => RowChosen?.Invoke(row);
             button.RegisterCallback<NavigationMoveEvent>(evt => OnMove(evt, row));
             button.RegisterCallback<FocusInEvent>(_ => m_Rows.ScrollTo(button));
 
             m_Rows.Add(button);
+            m_Selection.RegisterChosen(button, () => RowChosen?.Invoke(row));
             m_Buttons.Add(button);
+        }
+
+        private static Label NewButton()
+        {
+            Label button = new Label();
+
+            button.AddToClassList(UI_LABEL_CLASS);
+
+            return button;
         }
 
         // Up and down move the cursor, which the selection scope does before this; left and right step the row.
