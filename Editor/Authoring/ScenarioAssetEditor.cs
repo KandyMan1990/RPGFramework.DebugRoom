@@ -130,10 +130,9 @@ namespace RPGFramework.DebugRoom.Authoring
             VisualElement row = new VisualElement();
             row.style.flexDirection = FlexDirection.Row;
 
-            bool   set          = m_Values.IsSet(value);
-            string variableName = value.IsWholeVariable ? value.VariableName : null;
+            bool set = m_Values.IsSet(value);
 
-            VariableValueField field = new VariableValueField(value.Label, value.Width, m_Values.Get(value), bits => Write(row, value, bits), variableName, m_Values);
+            VariableValueField field = new VariableValueField(value.Label, value.Width, m_Values.Get(value), bits => Write(row, value, bits), value.PickerName, m_Values);
 
             VisualElement shown = field;
 
