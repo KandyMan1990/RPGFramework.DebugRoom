@@ -44,6 +44,7 @@ namespace RPGFramework.DebugRoom
         private readonly IPausedMusicStore    m_PausedMusicStore;
         private readonly IMusicPlayer         m_MusicPlayer;
         private readonly IModuleScene         m_ModuleScene;
+        private readonly AudioPage            m_AudioPage;
         private readonly IDebugRoomList[]     m_Pages;
         private readonly List<DebugRoomLevel> m_Levels;
         private readonly DebugRoomUI          m_UI;
@@ -85,6 +86,7 @@ namespace RPGFramework.DebugRoom
             m_PausedMusicStore  = pausedMusicStore;
             m_MusicPlayer       = musicPlayer;
             m_ModuleScene       = moduleScene;
+            m_AudioPage         = new AudioPage(musicProvider, sfxProvider, musicPlayer, sfxPlayer);
             m_Levels            = new List<DebugRoomLevel>();
             m_Naming            = null;
             m_NamingRow         = 0;
@@ -97,7 +99,7 @@ namespace RPGFramework.DebugRoom
                           new FieldsPage(fieldDatabase, spawnPointLoader, fieldArgsStore, playTimeStore),
                           new ScenariosPage(saveDataService, playTimeStore),
                           new VariablesPage(memoryService, variableMap),
-                          new AudioPage(musicProvider, sfxProvider, musicPlayer, sfxPlayer),
+                          m_AudioPage,
                           new BattlesPage(encounterDatabase, arenaDatabase, battleArgsStore, battleModeStore)
                       };
 
@@ -155,6 +157,7 @@ namespace RPGFramework.DebugRoom
         {
             SetInputEnabled(false);
             m_InputRouter.Pop(this);
+            m_AudioPage.StopSounds();
 
             return Task.CompletedTask;
         }

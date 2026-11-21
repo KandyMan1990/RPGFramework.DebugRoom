@@ -11,31 +11,34 @@ namespace RPGFramework.DebugRoom
 {
     /// <summary>
     /// The game's songs and sounds, by name, from its providers: a song played, crossfaded to or switched between its
-    /// stem states, a sound played, the music stopped, and both players' volumes stepped, for this session only.
+    /// stem states, a sound played, the music or every sound stopped, and both players' volumes stepped, for this
+    /// session only. The sounds played from here stop as the room leaves.
     /// </summary>
     internal sealed class AudioPage : IDebugRoomList
     {
         private const int   MUSIC_ROW          = 0;
         private const int   SOUNDS_ROW         = 1;
-        private const int   STOP_ROW           = 2;
-        private const int   MUSIC_VOLUME_ROW   = 3;
-        private const int   SOUND_VOLUME_ROW   = 4;
+        private const int   STOP_MUSIC_ROW     = 2;
+        private const int   STOP_SOUNDS_ROW    = 3;
+        private const int   MUSIC_VOLUME_ROW   = 4;
+        private const int   SOUND_VOLUME_ROW   = 5;
         private const float VOLUME_STEP        = 0.1f;
         private const float STEM_STATE_SECONDS = 1f;
         private const float STOP_SECONDS       = 1f;
 
         internal const float CROSSFADE_SECONDS = 2f;
 
-        private readonly IDebugMusicAssetProvider m_MusicProvider;
-        private readonly IDebugSfxAssetProvider   m_SfxProvider;
-        private readonly IMusicPlayer             m_MusicPlayer;
-        private readonly ISfxPlayer               m_SfxPlayer;
+        private readonly IDebugMusicAssetProvider  m_MusicProvider;
+        private readonly IDebugSfxAssetProvider    m_SfxProvider;
+        private readonly IMusicPlayer              m_MusicPlayer;
+        private readonly ISfxPlayer                m_SfxPlayer;
+        private readonly List<Task<ISfxReference>> m_Sounds;
 
         // The song last played from here, which only its own stem states switch.
         private ulong m_PlayingSong;
 
         string IDebugRoomList.Title => "Audio";
-        int IDebugRoomList.   Count => 5;
+        int IDebugRoomList.   Count => 6;
 
         internal AudioPage(IDebugMusicAssetProvider musicProvider,
                            IDebugSfxAssetProvider   sfxProvider,
@@ -46,6 +49,7 @@ namespace RPGFramework.DebugRoom
             m_SfxProvider   = sfxProvider;
             m_MusicPlayer   = musicPlayer;
             m_SfxPlayer     = sfxPlayer;
+            m_Sounds        = new List<Task<ISfxReference>>();
             m_PlayingSong   = 0;
         }
 
@@ -55,7 +59,8 @@ namespace RPGFramework.DebugRoom
                    {
                        MUSIC_ROW        => "Music",
                        SOUNDS_ROW       => "Sounds",
-                       STOP_ROW         => "Stop the music",
+                       STOP_MUSIC_ROW   => "Stop the music",
+                       STOP_SOUNDS_ROW  => "Stop every sound",
                        MUSIC_VOLUME_ROW => $"Music volume  {Percent(m_MusicPlayer.GetVolume())}",
                        _                => $"Sound volume  {Percent(m_SfxPlayer.GetVolume())}"
                    };
@@ -68,10 +73,14 @@ namespace RPGFramework.DebugRoom
                 case MUSIC_ROW:
                     return DebugRoomChoice.Open(new SongList(this, await m_MusicProvider.LoadNamesAsync()));
                 case SOUNDS_ROW:
-                    return DebugRoomChoice.Open(new SoundList(m_SfxPlayer, await m_SfxProvider.LoadNamesAsync()));
-                case STOP_ROW:
+                    return DebugRoomChoice.Open(new SoundList(this, await m_SfxProvider.LoadNamesAsync()));
+                case STOP_MUSIC_ROW:
                     m_PlayingSong = 0;
                     m_MusicPlayer.StopAsync(STOP_SECONDS).FireAndForget();
+                    return DebugRoomChoice.Done;
+                case STOP_SOUNDS_ROW:
+                    m_SfxPlayer.StopAll();
+                    m_Sounds.Clear();
                     return DebugRoomChoice.Done;
                 default:
                     return DebugRoomChoice.Refused;
@@ -120,6 +129,48 @@ namespace RPGFramework.DebugRoom
             m_MusicPlayer.SetStemStateFadeAsync(stemState, STEM_STATE_SECONDS).FireAndForget();
 
             return true;
+        }
+
+        internal void PlaySound(ulong sound)
+        {
+            for (int i = m_Sounds.Count - 1; i >= 0; i--)
+            {
+                if (HasEnded(m_Sounds[i]))
+                {
+                    m_Sounds.RemoveAt(i);
+                }
+            }
+
+            Task<ISfxReference> playing = m_SfxPlayer.PlayAsync(sound);
+
+            playing.FireAndForget();
+            m_Sounds.Add(playing);
+        }
+
+        /// <summary>Stops the sounds played from here, and no other, each once it has loaded.</summary>
+        internal void StopSounds()
+        {
+            for (int i = 0; i < m_Sounds.Count; i++)
+            {
+                if (!HasEnded(m_Sounds[i]))
+                {
+                    StopOnceLoadedAsync(m_Sounds[i]).FireAndForget();
+                }
+            }
+
+            m_Sounds.Clear();
+        }
+
+        private async Task StopOnceLoadedAsync(Task<ISfxReference> sound)
+        {
+            ISfxReference loaded = await sound;
+
+            m_SfxPlayer.Stop(loaded);
+        }
+
+        private static bool HasEnded(Task<ISfxReference> sound)
+        {
+            return sound.IsCompleted && (!sound.IsCompletedSuccessfully || sound.Result.Completion.IsCompleted);
         }
 
         private static string Percent(float volume)
@@ -218,16 +269,16 @@ namespace RPGFramework.DebugRoom
     /// <summary>Every sound, each played as it is chosen.</summary>
     internal sealed class SoundList : IDebugRoomList
     {
-        private readonly ISfxPlayer            m_SfxPlayer;
+        private readonly AudioPage             m_Page;
         private readonly IReadOnlyList<string> m_Names;
 
         string IDebugRoomList.Title => "Sounds";
         int IDebugRoomList.   Count => m_Names.Count;
 
-        internal SoundList(ISfxPlayer sfxPlayer, IReadOnlyList<string> names)
+        internal SoundList(AudioPage page, IReadOnlyList<string> names)
         {
-            m_SfxPlayer = sfxPlayer;
-            m_Names     = names;
+            m_Page  = page;
+            m_Names = names;
         }
 
         string IDebugRoomList.GetRowText(int row)
@@ -237,7 +288,7 @@ namespace RPGFramework.DebugRoom
 
         Task<DebugRoomChoice> IDebugRoomList.ChooseAsync(int row)
         {
-            m_SfxPlayer.PlayAsync(Fnv1a64.Hash(m_Names[row])).FireAndForget();
+            m_Page.PlaySound(Fnv1a64.Hash(m_Names[row]));
 
             return Task.FromResult(DebugRoomChoice.DoneQuietly);
         }
